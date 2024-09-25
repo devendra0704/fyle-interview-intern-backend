@@ -7,6 +7,7 @@ def test_get_assignments_student_1(client, h_student_1):
     assert response.status_code == 200
 
     data = response.json['data']
+    # print(data)
     for assignment in data:
         assert assignment['student_id'] == 1
 

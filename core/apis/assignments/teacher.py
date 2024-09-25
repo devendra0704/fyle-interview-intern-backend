@@ -8,13 +8,44 @@ from .schema import AssignmentSchema, AssignmentGradeSchema
 teacher_assignments_resources = Blueprint('teacher_assignments_resources', __name__)
 
 
+# @teacher_assignments_resources.route('/assignments', methods=['GET'], strict_slashes=False)
+# @decorators.authenticate_principal
+# def list_assignments(p):
+#     """Returns list of assignments"""
+#     teachers_assignments = Assignment.get_assignments_by_teacher()
+#     teachers_assignments_dump = AssignmentSchema().dump(teachers_assignments, many=True)
+#     return APIResponse.respond(data=teachers_assignments_dump)
+
+
+
 @teacher_assignments_resources.route('/assignments', methods=['GET'], strict_slashes=False)
-@decorators.authenticate_principal
-def list_assignments(p):
-    """Returns list of assignments"""
-    teachers_assignments = Assignment.get_assignments_by_teacher()
+@decorators.authenticate_teacher
+def list_assignments(teacher):
+    """Returns list of assignments for a specific teacher"""
+    teachers_assignments = Assignment.get_assignments_by_teacher(teacher.id)
     teachers_assignments_dump = AssignmentSchema().dump(teachers_assignments, many=True)
     return APIResponse.respond(data=teachers_assignments_dump)
+
+
+
+
+# @teacher_assignments_resources.route('/assignments/grade', methods=['POST'], strict_slashes=False)
+# @decorators.accept_payload
+# @decorators.authenticate_principal
+# def grade_assignment(p, incoming_payload):
+#     """Grade an assignment"""
+#     grade_assignment_payload = AssignmentGradeSchema().load(incoming_payload)
+
+#     graded_assignment = Assignment.mark_grade(
+#         _id=grade_assignment_payload.id,
+#         grade=grade_assignment_payload.grade,
+#         auth_principal=p
+#     )
+#     db.session.commit()
+#     graded_assignment_dump = AssignmentSchema().dump(graded_assignment)
+#     return APIResponse.respond(data=graded_assignment_dump)
+
+
 
 
 @teacher_assignments_resources.route('/assignments/grade', methods=['POST'], strict_slashes=False)
@@ -24,6 +55,24 @@ def grade_assignment(p, incoming_payload):
     """Grade an assignment"""
     grade_assignment_payload = AssignmentGradeSchema().load(incoming_payload)
 
+    # Check if the assignment exists
+    assignment = Assignment.query.get(grade_assignment_payload.id)
+    if assignment is None:
+        return APIResponse.respond(data= 'FyleError',error='FyleError', status_code=404)
+
+    # Check if the assignment belongs to the teacher
+    if assignment.teacher_id != p.teacher_id:
+        return APIResponse.respond(data= 'FyleError',error='FyleError', status_code=400)
+
+    # Validate the grade
+    # if grade_assignment_payload.grade not in GradeEnum.__members__:
+    #     return APIResponse.respond(data='ValidationError', error='ValidationError', status_code=400)
+
+    # # Check if the assignment is submitted
+    # if assignment.state == 'DRAFT':
+    #     return APIResponse.respond(data= 'FyleError',error='FyleError', status_code=400)
+
+    # Grade the assignment
     graded_assignment = Assignment.mark_grade(
         _id=grade_assignment_payload.id,
         grade=grade_assignment_payload.grade,

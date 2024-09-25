@@ -6,7 +6,6 @@ from core.models.teachers import Teacher
 from core.models.students import Student
 from sqlalchemy.types import Enum as BaseEnum
 
-
 class GradeEnum(str, enum.Enum):
     A = 'A'
     B = 'B'
@@ -20,6 +19,7 @@ class AssignmentStateEnum(str, enum.Enum):
     GRADED = 'GRADED'
 
 
+
 class Assignment(db.Model):
     __tablename__ = 'assignments'
     id = db.Column(db.Integer, db.Sequence('assignments_id_seq'), primary_key=True)
@@ -31,8 +31,10 @@ class Assignment(db.Model):
     created_at = db.Column(db.TIMESTAMP(timezone=True), default=helpers.get_utc_now, nullable=False)
     updated_at = db.Column(db.TIMESTAMP(timezone=True), default=helpers.get_utc_now, nullable=False, onupdate=helpers.get_utc_now)
 
-    def __repr__(self):
-        return '<Assignment %r>' % self.id
+
+    # def __repr__(self):
+    #     return '<Assignment %r>' % self.id
+
 
     @classmethod
     def filter(cls, *criterion):
@@ -72,22 +74,24 @@ class Assignment(db.Model):
         return assignment
 
 
-    @classmethod
-    def mark_grade(cls, _id, grade, auth_principal: AuthPrincipal):
-        assignment = Assignment.get_by_id(_id)
-        assertions.assert_found(assignment, 'No assignment with this id was found')
-        assertions.assert_valid(grade is not None, 'assignment with empty grade cannot be graded')
+    # @classmethod
+    # def mark_grade(cls, _id, grade, auth_principal: AuthPrincipal):
+    #     assignment = Assignment.get_by_id(_id)
+    #     assertions.assert_found(assignment, 'No assignment with this id was found')
+    #     assertions.assert_valid(grade is not None, 'assignment with empty grade cannot be graded')
 
-        assignment.grade = grade
-        assignment.state = AssignmentStateEnum.GRADED
-        db.session.flush()
+    #     assignment.grade = grade
+    #     assignment.state = AssignmentStateEnum.GRADED
+    #     db.session.flush()
 
-        return assignment
+    #     return assignment
 
     @classmethod
     def get_assignments_by_student(cls, student_id):
         return cls.filter(cls.student_id == student_id).all()
 
     @classmethod
-    def get_assignments_by_teacher(cls):
-        return cls.query.all()
+    def get_assignments_by_teacher(cls, teacher_id):
+        return cls.query.filter_by(teacher_id=teacher_id).filter(cls.state.in_(['SUBMITTED', 'GRADED'])).all()
+
+
